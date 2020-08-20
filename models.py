@@ -1,4 +1,4 @@
-import torchvision.models as models
+import torchvision.models 
 
 def models(name, pretrained=False):
     if name == 'densenet121':
