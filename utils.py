@@ -1,9 +1,5 @@
-#함수이름은 lower camel, 변수이름은 under bar lower case
-#파이썬에서? 함수값을 그냥 넣으면 
-from models import models
 import torch.nn as nn
-
-#initialize classification layer?
+from models import models
 
 def freezeResNet(model):
     for name, p in model.named_parameters():
