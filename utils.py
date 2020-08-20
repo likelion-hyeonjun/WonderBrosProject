@@ -20,7 +20,7 @@ def freezeVGG(model):
     return model
 
 
-def fineTuningModel(name, num_classes, is_freeze=True, pretrained=False): #freeze
+def fineTuningModel(name, num_classes, is_freeze, pretrained = True): #freeze #true true시 r
 
     model = models(name, pretrained) 
     if 'resnet' in name:
@@ -40,4 +40,5 @@ def fineTuningModel(name, num_classes, is_freeze=True, pretrained=False): #freez
             model = freezeDenseNet(model)
     
     return model
-    
+
+

@@ -1,6 +1,6 @@
 import torchvision.models 
 
-def models(name, pretrained=False):
+def models(name, pretrained=True):
     if name == 'densenet121':
         model = torchvision.models.densenet121(pretrained=pretrained)
     elif name == 'densenet169':

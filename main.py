@@ -13,27 +13,37 @@ import os
 import argparse
 
 from models import *
-from utils import progress_bar
+from utils import fineTuningModel
+from train import train
+from test import Test
+
+def str2bool(v):
+    if v.lower() in ('yes', 'true', 't', 'y', '1'):
+        return True
+    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+        return False
+    else:
+        raise argparse.ArgumentTypeError('Boolean value expected.')
 
 #오늘 모델돌릴수있는데까지 짜고 내일 state이거해야겠다
 parser = argparse.ArgumentParser(description='GroceryDataset Training with VGG, ResNet and DenseNet')
-parse.add_argument('--model', 
+parser.add_argument('--model', 
                     default ='vgg19',
                     help='choose model for experiment \n available params: densenet, resnet, vgg19')
-parse.add_argument('--lr', default=0.1, type=float, help='learning rate')
-parse.add_argument('--epoch', type=int, default=50, help='# of epoch')
-parse.add_argument('--batch_size', type=int, default=1, help='# images in batch')
-parse.add_argument('--opt', default='SGD', help='optimizer')
+parser.add_argument('--lr', default=0.1, type=float, help='learning rate')
+parser.add_argument('--epoch', type=int, default=50, help='# of epoch')
+parser.add_argument('--train_batch_size', type=int, default=1, help='# images in batch when training')
+parser.add_argument('--test_batch_size', type=int, default=1, help='# images in batch when testing')
+parser.add_argument('--opt', default='SGD', help='optimizer')
+parser.add_argument('--freeze', type=str2bool ,default="true", help='true: fine-tuning for only classifier layer, false: fine-tuning for whole layer (with pretrained)')
 
 args = parser.parse_args()
 
 # 추가해야할 부분 fint turning 관련된 arg, data augmentation 관련 arg
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
-best_acc = 0  # best test accuracy
-start_epoch = 0  # start from epoch 0 or last checkpoint epoch
 
-# Data
+# DataSet
 print('==> Preparing data..')
 preprocess_densenet = transforms.Compose([
     transforms.RandomResizedCrop(224),
@@ -42,131 +52,70 @@ preprocess_densenet = transforms.Compose([
 ])
 
 preprocess_vgg = transforms.Compose([
-    transforoms.RandomResizedCrop(224),
+    transforms.RandomResizedCrop(224),
     transforms.ToTensor(),
     transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
 ])
 
 preprocess_resnet = transforms.Compose([
-
+    transforms.RandomResizedCrop(224),
+    transforms.ToTensor(),
+    transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
 ])
 
-if args.model == 'vgg19':
+if 'vgg' in args.model :
     preprocess = preprocess_vgg
-elif args.model == 'resnet':
+elif 'resnet' in args.model :
     preprocess = preprocess_resnet
-elif args.model == 'densenet':
+elif 'densenet' in args.model :
     preprocess = preprocess_densenet
 
+trainDataPath = trainDataPath = os.getcwd()+"/GroceryStoreDataset-master/dataset/train/Packages"
 train_dataset = ImageFolder(root=trainDataPath, transform = preprocess)
 train_loader = torch.utils.data.DataLoader(train_dataset, 
-                                            batch_size=args.batch_size,
+                                            batch_size=args.train_batch_size,
                                             shuffle = True)
+testDataPath = os.getcwd()+"/GroceryStoreDataset-master/dataset/test/Packages"
+test_dataset = ImageFolder(root=testDataPath, transform = preprocess) #이거 test시에해야하나?
+test_loader = torch.utils.data.DataLoader(test_dataset,
+                                          batch_size = args.test_batch_size,
+                                          shuffle = False)
 
-test_dataset = ImageFolder(root=testDataPath, transform = preprocess)
-
-                                
 # Model
-print('==> Building model..')trainset = torchvision.datasets.CIFAR10(
-    root='./data', train=True, download=True, transform=transform_train)
-trainloader = torch.utils.data.DataLoader(
-    trainset, batch_size=128, shuffle=True, num_workers=2)
+print('==> Building model..')
 
-testset = torchvision.datasets.CIFAR10(
-    root='./data', train=False, download=True, transform=transform_test)
-testloader = torch.utils.data.DataLoader(
-    testset, batch_size=100, shuffle=False, num_workers=2)
+classes = ('Alpro-Blueberry-Soyghurt','Alpro-Fresh-Soy-Milk',
+            'Alpro-Shelf-Soy-Milk', 'Alpro-Vanilla-Soyghurt',
+            'Arla-Ecological-Medium-Fat-Milk', 'Arla-Ecological-Sour-Cream',
+            'Arla-Lactose-Medium-Fat-Milk', 'Arla-Medium-Fat-Milk',
+            'Arla-Mild-Vanilla-Yoghurt', 'Arla-Natural-Mild-Low-Fat-Yoghurt',
+            'Arla-Natural-Yoghurt','Arla-Sour-Cream',
+            'Arla-Sour-Milk','Arla-Standard-Milk',
+            'Bravo-Apple-Juice', 'Bravo-Orange-Juice',
+            'Garant-Ecological-Medium-Fat-Milk', 'Garant-Ecological-Standard-Milk',
+            'God-Morgon-Apple-Juice', 'God-Morgon-Orange-Juice',
+            'God-Morgon-Orange-Red-Grapefruit-Juice', 'God-Morgon-Red-Grapefruit-Juice',
+            'Oatly-Natural-Oatghurt', 'Oatly-Oat-Milk',
+            'Tropicana-Apple-Juice', 'Tropicana-Golden-Grapefruit',
+            'Tropicana-Juice-Smooth', 'Tropicana-Mandarin-Morning',
+            'Valio-Vanilla-Yoghurt', 'Yoggi-Strawberry-Yoghurt',
+            'Yoggi-Vanilla-Yoghurt')
 
-classes = ('plane', 'car', 'bird', 'cat', 'deer',
-           'dog', 'frog', 'horse', 'ship', 'truck')
 
-# net = ResNeXt29_2x64d()
-# net = MobileNet()
-# net = MobileNetV2()
-# net = DPN92()
-# net = ShuffleNetG2()
-# net = SENet18()
-# net = ShuffleNetV2(1)
-# net = EfficientNetB0()
-net = RegNetX_200MF()
-net = net.to(device)
-if device == 'cuda':
-    net = torch.nn.DataParallel(net)
-    cudnn.benchmark = True
-
-if args.resume:
-    # Load checkpoint.
-    print('==> Resuming from checkpoint..')
-    assert os.path.isdir('checkpoint'), 'Error: no checkpoint directory found!'
-    checkpoint = torch.load('./checkpoint/ckpt.pth')
-    net.load_state_dict(checkpoint['net'])
-    best_acc = checkpoint['acc']
-    start_epoch = checkpoint['epoch']
-
+print('args is')
+print(args.freeze)
+#resume일 경우?
+model = fineTuningModel(args.model, len(classes), args.freeze, True) #is freeze, pretrained 넣어주기
 criterion = nn.CrossEntropyLoss()
-optimizer = optim.SGD(net.parameters(), lr=args.lr,
+optimizer = optim.SGD(model.parameters(), lr=args.lr,
                       momentum=0.9, weight_decay=5e-4)
+exp_lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=30, gamma=0.1)
+#그냥 트레인으로만들자..  early stopping 넣어서
+#해야할거 validation set만들기 그리고 train에 early stopping 하기. 
+# train때 load state dict하기 
 
 
-# Training
-def train(epoch):
-    print('\nEpoch: %d' % epoch)
-    net.train()
-    train_loss = 0
-    correct = 0
-    total = 0
-    for batch_idx, (inputs, targets) in enumerate(trainloader):
-        inputs, targets = inputs.to(device), targets.to(device)
-        optimizer.zero_grad()
-        outputs = net(inputs)
-        loss = criterion(outputs, targets)
-        loss.backward()
-        optimizer.step()
-
-        train_loss += loss.item()
-        _, predicted = outputs.max(1)
-        total += targets.size(0)
-        correct += predicted.eq(targets).sum().item()
-
-        progress_bar(batch_idx, len(trainloader), 'Loss: %.3f | Acc: %.3f%% (%d/%d)'
-                     % (train_loss/(batch_idx+1), 100.*correct/total, correct, total))
-
-
-def test(epoch):
-    global best_acc
-    net.eval()
-    test_loss = 0
-    correct = 0
-    total = 0
-    with torch.no_grad():
-        for batch_idx, (inputs, targets) in enumerate(testloader):
-            inputs, targets = inputs.to(device), targets.to(device)
-            outputs = net(inputs)
-            loss = criterion(outputs, targets)
-
-            test_loss += loss.item()
-            _, predicted = outputs.max(1)
-            total += targets.size(0)
-            correct += predicted.eq(targets).sum().item()
-
-            progress_bar(batch_idx, len(testloader), 'Loss: %.3f | Acc: %.3f%% (%d/%d)'
-                         % (test_loss/(batch_idx+1), 100.*correct/total, correct, total))
-
-    # Save checkpoint.
-    acc = 100.*correct/total
-    if acc > best_acc:
-        print('Saving..')
-        state = {
-            'net': net.state_dict(),
-            'acc': acc,
-            'epoch': epoch,
-        }
-        if not os.path.isdir('checkpoint'):
-            os.mkdir('checkpoint')
-        torch.save(state, './checkpoint/ckpt.pth')
-        best_acc = acc
-
-
-for epoch in range(start_epoch, start_epoch+200):
-    train(epoch)
-    test(epoch)
+trained_model = train(model, train_loader, criterion, optimizer, exp_lr_scheduler, device, len(train_dataset), args.epoch)
+test_model = Test(trained_model, test_loader, len(test_dataset))
+test_model.OverallAccuracy()
+test_model.ClassAccuracy(classes)
