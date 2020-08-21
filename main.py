@@ -80,7 +80,11 @@ test_dataset = ImageFolder(root=testDataPath, transform = preprocess) #이거 te
 test_loader = torch.utils.data.DataLoader(test_dataset,
                                           batch_size = args.test_batch_size,
                                           shuffle = False)
-
+validDataPath = os.getcwd()+"/GroceryStoreDataset-master/dataset/valid/Packages"
+valid_dataset = ImageFolder(root=validDataPath, transform = preprocess)
+valid_loader = torch.utils.data.DataLoader(valid_dataset,
+                                          batch_size = args.test_batch_size,
+                                          shuffle = False)
 # Model
 print('==> Building model..')
 
@@ -102,8 +106,6 @@ classes = ('Alpro-Blueberry-Soyghurt','Alpro-Fresh-Soy-Milk',
             'Yoggi-Vanilla-Yoghurt')
 
 
-print('args is')
-print(args.freeze)
 #resume일 경우?
 model = fineTuningModel(args.model, len(classes), args.freeze, True) #is freeze, pretrained 넣어주기
 criterion = nn.CrossEntropyLoss()
@@ -115,7 +117,7 @@ exp_lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=30, gamm
 # train때 load state dict하기 
 
 
-trained_model = train(model, train_loader, criterion, optimizer, exp_lr_scheduler, device, len(train_dataset), args.epoch)
+trained_model = train(model, train_loader, criterion, optimizer, exp_lr_scheduler, device, len(train_dataset), len(valid_dataset), args.epoch)
 test_model = Test(trained_model, test_loader, len(test_dataset))
 test_model.OverallAccuracy()
 test_model.ClassAccuracy(classes)

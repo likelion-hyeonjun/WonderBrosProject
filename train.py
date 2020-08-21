@@ -1,6 +1,6 @@
 import torch
 
-def train(model, train_loader, criterion, optimizer, scheduler, device ,num_data, num_epochs=100):
+def train(model, train_loader, valid_loader, criterion, optimizer, scheduler, device ,num_train_data, num_valid_data, num_epochs=100):
     print('==> Training model..')
     model.to(device)
     for epoch in range(num_epochs):
@@ -29,9 +29,32 @@ def train(model, train_loader, criterion, optimizer, scheduler, device ,num_data
             running_corrects += torch.sum(preds == labels.data)
         
         scheduler.step()
-        epoch_loss = running_loss / num_data
-        epoch_acc = running_corrects.double() / num_data
+        epoch_loss = running_loss / num_train_data
+        epoch_acc = running_corrects.double() / num_train_data
         
-        print('Loss: {:.4f} Acc: {:.4f}'.format(
-                epoch_loss, epoch_acc))
+        #validate!
+
+        model.eval()
+        with torch.no_grad():
+
+            for val_inputs, val_labels in valid_loader:
+                val_inputs = val_inputs.to(device)
+                val_labels = val_labels.to(device)
+                val_outputs = model(val_inputs)
+                val_loss = criterion(val_outputs, val_labels)
+
+                _, val_preds = torch.max(val_outputs, 1)
+                val_running_loss += val_loss.item()
+                val_running_correct += torch.sum(val_preds == val_labels.data)
+            
+            val_epoch_loss = val_running_loss / num_valid_data
+            val_epoch_acc = val_running_correct.double() / num_valid_data
+        
+        print("===================================================")
+        print("epoch: ", epoch + 1)
+        print("training loss: {:.5f}, acc: {:5f}".format(epoch_loss, epoch_acc))
+        print("validation loss: {:.5f}, acc: {:5f}".format(val_epoch_loss, val_epoch_acc))
+
+
+        
     return model
