@@ -4,10 +4,10 @@ def train(model, train_loader, valid_loader, criterion, optimizer, scheduler, de
     print('==> Training model..')
     model.to(device)
     for epoch in range(num_epochs):
-        print('Epoch {}/{}'.format(epoch, num_epochs - 1))
-        print('-' * 10)
         running_loss = 0.0
         running_corrects = 0
+        val_running_loss = 0.0
+        val_running_correct =0
         
         model.train()
         
@@ -51,7 +51,7 @@ def train(model, train_loader, valid_loader, criterion, optimizer, scheduler, de
             val_epoch_acc = val_running_correct.double() / num_valid_data
         
         print("===================================================")
-        print("epoch: ", epoch + 1)
+        print('Epoch {}/{}'.format(epoch, num_epochs - 1))
         print("training loss: {:.5f}, acc: {:5f}".format(epoch_loss, epoch_acc))
         print("validation loss: {:.5f}, acc: {:5f}".format(val_epoch_loss, val_epoch_acc))
 

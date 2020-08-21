@@ -117,7 +117,16 @@ exp_lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=30, gamm
 # train때 load state dict하기 
 
 
-trained_model = train(model, train_loader, criterion, optimizer, exp_lr_scheduler, device, len(train_dataset), len(valid_dataset), args.epoch)
+trained_model = train(model = model, 
+                    train_loader = train_loader, 
+                    valid_loader = valid_loader,
+                    criterion = criterion, 
+                    optimizer = optimizer, 
+                    scheduler = exp_lr_scheduler, 
+                    device = device, 
+                    num_train_data =len(train_dataset), 
+                    num_valid_data = len(valid_dataset), 
+                    num_epochs = args.epoch)
 test_model = Test(trained_model, test_loader, len(test_dataset))
 test_model.OverallAccuracy()
 test_model.ClassAccuracy(classes)
