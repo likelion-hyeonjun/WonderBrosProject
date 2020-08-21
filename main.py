@@ -80,7 +80,7 @@ test_dataset = ImageFolder(root=testDataPath, transform = preprocess) #이거 te
 test_loader = torch.utils.data.DataLoader(test_dataset,
                                           batch_size = args.test_batch_size,
                                           shuffle = False)
-validDataPath = os.getcwd()+"/GroceryStoreDataset-master/dataset/valid/Packages"
+validDataPath = os.getcwd()+"/GroceryStoreDataset-master/dataset/val/Packages"
 valid_dataset = ImageFolder(root=validDataPath, transform = preprocess)
 valid_loader = torch.utils.data.DataLoader(valid_dataset,
                                           batch_size = args.test_batch_size,
