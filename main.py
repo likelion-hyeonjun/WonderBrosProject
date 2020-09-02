@@ -108,6 +108,12 @@ classes = ('Alpro-Blueberry-Soyghurt','Alpro-Fresh-Soy-Milk',
 
 #resume일 경우?
 model = fineTuningModel(args.model, len(classes), args.freeze, True) #is freeze, pretrained 넣어주기
+
+#use deformable !!should modify
+if args.model == 'densenet121':
+    #denseblock 4, denselayer16, last conv filter
+    model.features[-2][-1][-1] = deformable_filter(128, 18)
+
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.SGD(model.parameters(), lr=args.lr,
                       momentum=0.9, weight_decay=5e-4)
