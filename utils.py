@@ -1,3 +1,4 @@
+import torch
 import torch.nn as nn
 from models import models
 
@@ -41,4 +42,8 @@ def fineTuningModel(name, num_classes, is_freeze, pretrained = True): #freeze #t
     
     return model
 
+def init_conv_offset(m):
+    m.weight.data = torch.zeros_like(m.weight.data)
+    if m.bias is not None:
+        m.bias.data = torch.FloatTensor(m.bias.shape[0]).zero_()
 
