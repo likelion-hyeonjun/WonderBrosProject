@@ -8,6 +8,7 @@ import torch.backends.cudnn as cudnn
 import torchvision
 import torchvision.transforms as transforms
 from torchvision.datasets import ImageFolder
+from deformable_filter import *
 
 import os
 import argparse
@@ -110,10 +111,11 @@ classes = ('Alpro-Blueberry-Soyghurt','Alpro-Fresh-Soy-Milk',
 model = fineTuningModel(args.model, len(classes), args.freeze, True) #is freeze, pretrained 넣어주기
 
 #use deformable !!should modify
-if args.model == 'densenet121':
-    #denseblock 4, denselayer16, last conv filter
-    model.features[-2][-1][-1] = deformable_filter(128, 18)
-
+# if args.model == 'resnet101':
+#     #denseblock 4, denselayer16, last conv filter #model layer 0은 stride 2로 되있어서 안됨. ㅅㅂ
+#     model.layer4[1].conv2 = deformable_filter(512,512)
+#     model.layer4[2].conv2 = deformable_filter(512,512)
+print(model)
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.SGD(model.parameters(), lr=args.lr,
                       momentum=0.9, weight_decay=5e-4)

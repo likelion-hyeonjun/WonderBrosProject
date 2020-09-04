@@ -30,7 +30,7 @@ def train(model, train_loader, valid_loader, criterion, optimizer, scheduler, de
         
         scheduler.step()
         epoch_loss = running_loss / num_train_data
-        epoch_acc = running_corrects.double() / num_train_data
+        epoch_acc = running_corrects.double() / num_train_data * 100
         
         #validate!
 
@@ -48,7 +48,7 @@ def train(model, train_loader, valid_loader, criterion, optimizer, scheduler, de
                 val_running_correct += torch.sum(val_preds == val_labels.data)
             
             val_epoch_loss = val_running_loss / num_valid_data
-            val_epoch_acc = val_running_correct.double() / num_valid_data
+            val_epoch_acc = val_running_correct.double() / num_valid_data * 100
         
         print("===================================================")
         print('Epoch {}/{}'.format(epoch, num_epochs - 1))
